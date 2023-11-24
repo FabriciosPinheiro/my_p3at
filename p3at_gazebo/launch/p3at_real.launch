@@ -1,0 +1,78 @@
+<?xml version="1.0"?>
+<launch>
+
+<group ns="R1">
+		<param name="tf_prefix" value="P3AT_R1"/>
+
+  <arg name="laser_topic" default="scan"/>
+  <arg name="odom_topic" default="/rosaria/pose"/>
+  <arg name="odom_frame_id" default="odom"/> <!-- map -->
+  <arg name="base_frame_id" default="base_link"/> 
+  <arg name="global_frame_id" default="map"/>
+
+  <!--  ***************** Robot Model *****************  -->
+  <!--param name="robot_description" command="$(find xacro)/xacro.py '$(find p3at_description)/urdf/pioneer3at.urdf.xacro'"/-->
+
+  <!-- Map server -->
+  <!--node name="map_server" pkg="map_server" type="map_server" args="$(find mybot)maps/corredor.yaml" /-->
+
+  <!-- Start rosaria -->
+  <node name="rosaria" pkg="rosaria" type="RosAria" args="_port:=192.168.0.1:20001"/> <!--Local: _port:=/dev/ttyUSB0  Roteador:_port:=192.168.0.2:20001 _port:=/dev/ttyS0-->
+  <!--node name="Laser" pkg="lms1xx" type="LMS1xx_node" args="_host:=192.168.0.1 _frame_id:=base_link"/> < Remoto:10.208.6.224 local: 192.168.0.1 -->
+
+  <!-- ****************** Axis Camera ************************* -->
+  <arg name="camera_name" default="axis" />
+  <arg name="hostname" default="192.168.0.21" />
+  <arg name="enable_theora" default="0" />
+  <arg name="enable_ptz" default="1" />
+  <arg name="enable_ptz_teleop" default="0" />
+  
+  <group ns="$(arg camera_name)">
+    <param name="hostname" value="$(arg hostname)" />
+    <param name="width" value="640" />
+    <param name="height" value="480" />
+    <node pkg="axis_camera" type="axis.py" name="axis" />
+    <node pkg="axis_camera" type="axis_ptz.py" name="axis_ptz" if="$(arg enable_ptz)" />
+    
+    <!--node pkg="image_transport" type="republish" name="republish"> 
+      <remap from="in" to="image_raw" />
+      <remap from="out" to="image_raw_out" />
+    </node-->  
+    
+  </group>
+
+	<!-- send fake joint values -->
+	<!--node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
+		<param name="use_gui" value="False"/>
+	</node-->
+
+	<!-- Combine joint values -->
+	<!--node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher"/-->
+
+	<node pkg="lms1xx" type="LMS1xx_node" name="LMS1xx_node" output="screen">
+		<param name="host" value="192.168.0.11" /> 
+		<param name="frame_id" value="$(arg base_frame_id)" />
+	</node>
+
+	<!--  ************** Navigation  ***************  -->
+	<!--include file="$(find mybot)/launch/includes/move_base.launch.xml">
+		<arg name="odom_topic" value="$(arg odom_topic)"/>
+		<arg name="laser_topic" value="$(arg laser_topic)"/>
+		<arg name="odom_frame_id"   value="$(arg odom_frame_id)"/>
+		<arg name="base_frame_id"   value="$(arg base_frame_id)"/>
+		<arg name="global_frame_id" value="$(arg global_frame_id)"/>   
+	</include-->
+
+	<!--include file="$(find mybot)/launch/amcl_p3at.launch.xml"/-->
+
+	<!--node name="relay_cmd_vel" pkg="topic_tools" type="relay" args="sim_p3at/cmd_vel rosaria/cmd_vel"/-->
+
+	<!-- Show in Rviz   -->
+	<!--node name="rviz" pkg="rviz" type="rviz"/-->
+	<!--node name="rviz" pkg="rviz" type="rviz" args="-d $(find mybot_description)/launch/myrobot.rviz"/-->
+
+	<node pkg="tf" type="static_transform_publisher" name="odom_to_map" args="0 0 0 0 0 0 1 /odom /base_link 1"/>
+	<node pkg="tf" type="static_transform_publisher" name="hokuyo_to_scan" args="0 0 0 0 0 0 1 /scan /base_link 1"/>
+	</group>
+
+</launch>

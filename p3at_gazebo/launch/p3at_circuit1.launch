@@ -1,0 +1,69 @@
+<?xml version="1.0"?>
+
+<launch>
+
+  <!-- these are the arguments you can pass this launch file, for example paused:=true -->
+  <arg name="paused" default="false"/>
+  <arg name="use_sim_time" default="true"/>
+  <arg name="gui" default="true"/>
+  <arg name="headless" default="false"/>
+  <arg name="debug" default="false"/>
+  <arg name="x" default="0.5"/>
+  <arg name="y" default="0.5"/>
+  <arg name="yaw" default="0"/>
+
+  <!-- We resume the logic in empty_world.launch, changing only the name of the world to be launched -->
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="world_name" value="$(find p3at_gazebo)/worlds/p3at_circuit1v2.world"/>
+    <arg name="debug" value="$(arg debug)" />
+    <arg name="gui" value="$(arg gui)" />
+    <arg name="paused" value="$(arg paused)"/>
+    <arg name="use_sim_time" value="$(arg use_sim_time)"/>
+    <arg name="headless" value="$(arg headless)"/>
+  </include>
+
+  <!-- Load the URDF into the ROS Parameter Server -->
+  <param name="robot_description" command="$(find xacro)/xacro --inorder '$(find p3at_description)/urdf/p3at.xacro'" />
+
+  <!-- Spawn a robot into Gazebo -->
+  <node name="spawn_urdf" pkg="gazebo_ros" type="spawn_model" args="-param robot_description -urdf -model robot -x $(arg x) -y $(arg y) -Y $(arg yaw)" />
+
+  <!-- ros_control rrbot launch file -->
+  <include file="$(find p3at_control)/launch/p3at_control.launch" />
+
+  <!-- Map -->
+  <!--node pkg="map_server" name="map_server" type="map_server" args="$(find turtlebot3_navigation)/maps/map.yaml"/-->
+
+  <!-- AMCL -->
+  <!--include file="$(find turtlebot3_navigation)/launch/amcl.launch">
+  <arg name="scan_topic"  value="/sim_p3at/scan"/>
+  </include-->
+
+  <!--move_base -->
+  <!--node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
+    <param name="base_local_planner" value="dwa_local_planner/DWAPlannerROS" />
+    <rosparam file="$(find turtlebot3_navigation)/param/costmap_common_params_$(arg model).yaml" command="load" ns="global_costmap" />
+    <rosparam file="$(find turtlebot3_navigation)/param/costmap_common_params_$(arg model).yaml" command="load" ns="local_costmap" />
+    <rosparam file="$(find turtlebot3_navigation)/param/local_costmap_params.yaml" command="load" />
+    <rosparam file="$(find turtlebot3_navigation)/param/global_costmap_params.yaml" command="load" />
+    <rosparam file="$(find turtlebot3_navigation)/param/move_base_params.yaml" command="load" />
+    <rosparam file="$(find turtlebot3_navigation)/param/dwa_local_planner_params_$(arg model).yaml" command="load" />
+    <remap from="cmd_vel" to="/sim_p3at/cmd_vel"/>
+    <remap from="odom" to="/sim_p3at/odom"/>
+  </node-->
+
+  <node pkg="tf2_ros" type="static_transform_publisher" name="base_map"  args="0 0 0 0 0 0 map odom"/>
+  <node pkg="tf2_ros" type="static_transform_publisher" name="base_foot"  args="0 0 0 0 0 0 odom base_link"/>
+  <node pkg="tf2_ros" type="static_transform_publisher" name="base_laser"  args="0.15 0 0.3 0 0 0 base_link base_laser"/>
+
+  <node pkg="tf2_ros" type="static_transform_publisher" name="p3at_back_left_map"  args="0 0 0 0 0 0 p3at_back_left_hub p3at_back_left_wheel"/>
+  <node pkg="tf2_ros" type="static_transform_publisher" name="p3at_back_right_map"  args="0 0 0 0 0 0 p3at_back_right_hub p3at_back_right_wheel"/>
+  <node pkg="tf2_ros" type="static_transform_publisher" name="p3at_front_left_map"  args="0 0 0 0 0 0 p3at_front_left_hub p3at_front_left_wheel"/>
+  <node pkg="tf2_ros" type="static_transform_publisher" name="p3at_front_right_map"  args="0 0 0 0 0 0 p3at_front_right_hub p3at_front_right_wheel"/>
+
+  <!-- Array node sonar -->
+  <node pkg="p3at_agents" name="laser_service" type="array_laser_srv3.py"/>
+
+  <!--node pkg="rviz" type="rviz" name="rviz"/-->
+
+</launch>

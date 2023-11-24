@@ -1,0 +1,7 @@
+README.md
+setup.py
+gym_pancam.egg-info/PKG-INFO
+gym_pancam.egg-info/SOURCES.txt
+gym_pancam.egg-info/dependency_links.txt
+gym_pancam.egg-info/requires.txt
+gym_pancam.egg-info/top_level.txt
